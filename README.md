@@ -37,7 +37,7 @@ Numpy for image processing
 Imutils for video frame capture
 
 The program is entirely written on Python 3. 
-Special thanks and credits to Adrian Rosebrock for his awesome OpenCV tutorials and code examples.
+Special thanks and credits to Adrian Rosebrock for his awesome OpenCV tutorials and code examples. The face recognition, face detection, QR Code reading parts of this code are based on his work.
 
 ## What's next for MFA for Buildings
 

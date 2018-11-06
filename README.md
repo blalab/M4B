@@ -68,42 +68,44 @@ You'll have to install the following in your computer:
 - OpenCV 4
 
 For Mac
-https://www.pyimagesearch.com/2016/12/19/install-opencv-3-on-macos-with-homebrew-the-easy-way/
+[Instructions here](https://www.pyimagesearch.com/2016/12/19/install-opencv-3-on-macos-with-homebrew-the-easy-way/)
 
 For Raspberry Pi
-https://www.pyimagesearch.com/2018/09/26/install-opencv-4-on-your-raspberry-pi/
+[Instructions here](https://www.pyimagesearch.com/2018/09/26/install-opencv-4-on-your-raspberry-pi/)
 
 - VirtualEnv
 - VirtualEnv Wrapper
 
 - PYZBAR
-$ pip install pyzbar
+```$ pip install pyzbar```
 
 - Face Recognition
-$ pip install face_recognition
+```$ pip install face_recognition```
 
 ## USAGE
 
 To create a user pass:
 
-$ python guest_booking.py
+```$ python guest_booking.py```
 
 To run the main program which will identify faces and read QR Codes:
 
-$ python main.py --cascade haarcascade_frontalface_default.xml --encodings encodings.pickle --prototxt deploy.prototxt.txt --model res10_300x300_ssd_iter_140000.caffemodel --framesize 1600 --videosource 0
+```$ python main.py --cascade haarcascade_frontalface_default.xml --encodings encodings.pickle --prototxt deploy.prototxt.txt --model res10_300x300_ssd_iter_140000.caffemodel --framesize 1600 --videosource 0```
 
 
 To forget all the faces:
 
-$ source nuke.sh
+```$ source nuke.sh```
 
 ## GUEST PASS
 
-Tenant passes live in /g_pass an have the following shape:
+Tenant passes live in /g_pass/<date-of-arrival>/ an have the following shape:
 
 ```{'_id': '', 'guest': 'John Doe', 'token': '717c1', 'date': '20181106', 'time': '', 'guest_type': 'tenant_guest', 'face_id': '', 'created': '20181106-171012', 'host': ''}```
 
 
-If you want to integrate to a Guest Management System your script should insert the generated token string in the "token" field for M4B to pair the face along with the Guest name in the "guest" field and the pass date in the "date" field. 
+If you want to integrate to a Guest Management System your script should insert the generated token string in the "token" field for M4B to pair the face along with the Guest name in the "guest" field and the arrival date in the "date" field. 
+
+
 
 

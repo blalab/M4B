@@ -15,7 +15,7 @@ date = time.strftime("%Y%m%d")
 
 t_pass = {}
 t_pass['_id'] = ''
-t_pass['tenant_name'] = tenant_name
+t_pass['name'] = tenant_name
 t = uuid.uuid4().hex
 t_pass['token'] = t[:5]
 t_pass['date'] = date

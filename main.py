@@ -181,11 +181,11 @@ for subdir, dirs, files in os.walk("t_pass"):
                     #Load registered tenants in memory
                     if not t_data["face_id"]=='' and not t_data["token"]=='':
                         uuid2tenantqr[t_data["face_id"]] = t_data["token"] 
-                        uuid2tenantname[t_data["face_id"]] = t_data["tenant_name"]
+                        uuid2tenantname[t_data["face_id"]] = t_data["name"]
 
                     #Load un-registered guests in memory
                     if t_data["face_id"] == '' and not t_data["token"] == '':
-                        unregistered_tenants[t_data["token"]] = t_data["tenant_name"] 
+                        unregistered_tenants[t_data["token"]] = t_data["name"] 
 
                 except:
                     print('%s is corrupt. Skipping'%filepath)
@@ -226,11 +226,11 @@ for subdir, dirs, files in os.walk("g_pass"):
                     #Load today's registered guests in memory
                     if not g_data["face_id"]=='' and not g_data["token"]=='' and g_data["date"]==time.strftime("%Y%m%d"):
                         uuid2guestqr[g_data["face_id"]] = g_data["token"] 
-                        uuid2guestname[g_data["face_id"]] = g_data["guest_name"]
+                        uuid2guestname[g_data["face_id"]] = g_data["name"]
 
                     #Load today's un-registered guests in memory
                     if g_data["face_id"] == '' and not g_data["token"] == '' and g_data["date"]==time.strftime("%Y%m%d"):
-                        unregistered_guests[g_data["token"]] = g_data["guest_name"] 
+                        unregistered_guests[g_data["token"]] = g_data["name"] 
 
                 except:
                     print('%s is corrupt. Skipping'%filepath)
@@ -271,7 +271,7 @@ unames = []
 encodings = []
 
 #[GU] Variable to keep track of stability of guest registration candidates
-new_guest_buffer = ('','',0)
+new_face_buffer = ('','',0)
 
 
 # [QR,RE] loop over the frames from the video stream
@@ -624,56 +624,76 @@ while True:
             # Match an unknown face with an unmatched barcode without a face
 
             if len(present_barcodes)==1 and num_faces==1:
+
                 if present_barcodes[0] in unregistered_guests:
-                    if present_barcodes[0]==new_guest_buffer[0] and name==new_guest_buffer[1] :                    
-                        new_guest_buffer = (present_barcodes[0],name,new_guest_buffer[2]+1)
-                        qrmatch = "Learning guest face : %s "%(args["newfacebuffermax"]-new_guest_buffer[2])
+                    if present_barcodes[0]==new_face_buffer[0] and name==new_face_buffer[1] :                    
+                        qrmatch = "Matching guest face : %s "%(args["newfacebuffermax"]-new_face_buffer[2])
+                        new_face_buffer = (present_barcodes[0],name,new_face_buffer[2]+1,"g")
                     else:
-                        new_guest_buffer = (present_barcodes[0],name,0)
-                        qrmatch = "Learning guest face : %s "%(args["newfacebuffermax"]-new_guest_buffer[2])
+                        new_face_buffer = (present_barcodes[0],name,0)
+                        qrmatch = "Matching guest face : %s "%(args["newfacebuffermax"]-new_face_buffer[2])
 
-                    print(new_guest_buffer)
+                    print(new_face_buffer)
 
-            #[GU] Guest candidate is stable,
-            # post the match between face and guest pass
+                else present_barcodes[0] in unregistered_tenants:
+                    if present_barcodes[0]==new_face_buffer[0] and name==new_face_buffer[1] :                    
+                        qrmatch = "Matching tenant face : %s "%(args["newfacebuffermax"]-new_face_buffer[2])
+                        new_face_buffer = (present_barcodes[0],name,new_face_buffer[2]+1,"t")
+                    else:
+                        new_face_buffer = (present_barcodes[0],name,0)
+                        qrmatch = "Matching tenant face : %s "%(args["newfacebuffermax"]-new_face_buffer[2])
 
-            if new_guest_buffer[2] == args["newfacebuffermax"]:
+                    print(new_face_buffer)
 
-                # Open the g_pass to update it
-                pass_filename = 'g_pass/%s/pass_%s.json'%(time.strftime("%Y%m%d"),new_guest_buffer[0])
-                guest_name = ''
+
+            #[GU] New Face is stable,
+            #POST the match between face and pass
+
+            if new_face_buffer[2] == args["newfacebuffermax"]:
+
+                # Open the access pass to update it
+                pass_filename = '%s_pass/%s/pass_%s.json'%(new_face_buffer[3],time.strftime("%Y%m%d"),new_face_buffer[0])
+                face_name = ''
 
                 print(pass_filename)
                 
                 with open(pass_filename, "r+") as f:
 
-                    g_pass_json = f.read()
-                    g_pass = json.loads(g_pass_json)
+                    access_pass_json = f.read()
+                    access_pass = json.loads(access_pass_json)
 
 
-                    if g_pass['face_id'] == '':
+                    if access_pass['face_id'] == '':
 
                         # input "name" in the face_id
-                        g_pass['face_id'] = name
-                        g_pass['registered'] = time.strftime("%Y%m%d-%H%M%S")
-                        guest_name = g_pass['guest']
+                        access_pass['face_id'] = name
+                        access_pass['registered'] = time.strftime("%Y%m%d-%H%M%S")
+                        face_name = access_pass['name']
 
-                        print(g_pass)
+                        print(access_pass)
 
                         # Save File
                         try:    
                             f.seek(0)                        
                             f.truncate()
-                            f.write(json.dumps(g_pass))
+                            f.write(json.dumps(access_pass))
 
                             # Enter it in memory : uuid2guestqr and uuid2guestname 
-                            uuid2guestqr[name] = new_guest_buffer[0] 
-                            uuid2guestname[name] = guest_name
+                            if new_face_buffer[3]=='g':
+                                uuid2guestqr[name] = new_face_buffer[0] 
+                                uuid2guestname[name] = face_name
 
-                            if new_guest_buffer[0] in unregistered_guests:
-                                del unregistered_guests[new_guest_buffer[0]]
+                                if new_face_buffer[0] in unregistered_guests:
+                                    del unregistered_guests[new_face_buffer[0]]
 
-                            print("Guest Pass MATCHED")
+                            elif:
+                                uuid2tenantqr[name] = new_face_buffer[0] 
+                                uuid2tenantname[name] = face_name
+
+                                if new_face_buffer[0] in unregistered_tenants:
+                                    del unregistered_tenants[new_face_buffer[0]]
+
+                            print("%s access Pass MATCHED"%new_face_buffer[3])
 
                         except:
                             pass
@@ -682,11 +702,7 @@ while True:
 
                     else:
                      
-                        print("Guest Pass MATCHING skipped")
-                        print(unregistered_guests)
-
-                
-
+                        print("Access Pass MATCHING skipped")
 
 
                 
@@ -703,7 +719,7 @@ while True:
                     enc_meta = json.loads(enc_meta_json)
 
                     # input face_name
-                    enc_meta['face_name'] = guest_name
+                    enc_meta['face_name'] = face_name
                     enc_meta['last_seen'] = time.strftime("%Y%m%d-%H%M%S")
                     print(enc_meta)
                     

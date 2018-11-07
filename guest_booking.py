@@ -18,7 +18,7 @@ print(str(date))
 
 g_pass = {}
 g_pass['_id'] = ''
-g_pass['guest_name'] = guest_name
+g_pass['name'] = guest_name
 t = uuid.uuid4().hex
 g_pass['token'] = t[:5]
 g_pass['date'] = date

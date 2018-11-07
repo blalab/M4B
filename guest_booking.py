@@ -7,7 +7,7 @@ print("GUEST BOOKING INTERFACE")
 
 
 guest_name = str(input("Guest name:"))
-print("You entered " + str(guest))
+print("You entered " + str(guest_name))
 
 date = str(input("Visit Date: (YYYYMMDD)"))
 if not date:

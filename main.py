@@ -193,9 +193,13 @@ for subdir, dirs, files in os.walk("t_pass"):
                 finally:
                     f.close()
 
-print(uuid2tenantqr)
+#print(uuid2tenantqr)
 #print(uuid2tenantname)
+for key in set(uuid2tenantqr.keys()) & set(uuid2tenantname.keys()):
+    print("%s,%s,%s"%(key, uuid2tenantqr[key], uuid2tenantname[key]))
+
 #print(unregistered_tenants)
+print('Unregistered tenants: %s'%unregistered_tenants)
 
 
 
@@ -239,9 +243,13 @@ for subdir, dirs, files in os.walk("g_pass"):
                     f.close()
             
 
-print(uuid2guestqr)
+#print(uuid2guestqr)
 #print(uuid2guestname)
-#print(unregistered_guests)
+#print('Unregistered guests:')
+print('Unregistered guests: %s'%unregistered_guests)
+
+for key in set(uuid2guestqr.keys()) & set(uuid2guestname.keys()):
+    print("%s,%s,%s"%(key, uuid2guestqr[key], uuid2guestname[key]))
 
 
 # [RE] Initialize object for new faces and embeddings
@@ -485,12 +493,15 @@ while True:
             (0, 255, 0), 2)
         y = top - 15 if top - 15 > 15 else top + 15
 
-        if name in uuid2name:
-            displayname = uuid2name[name]
+
+        if name in uuid2tenantname:
+            displayname = uuid2tenantname[name]
         elif name in uuid2guestname:
             displayname = uuid2guestname[name]
+        #elif name in uuid2name:
+        #    displayname = uuid2name[name]
         else:
-            displayname = name
+            displayname = name[:5]
 
         cv2.putText(frame, displayname, (left, y), cv2.FONT_HERSHEY_SIMPLEX,
             0.75, (0, 255, 0), 2)
@@ -635,7 +646,7 @@ while True:
 
                     print(new_face_buffer)
 
-                else present_barcodes[0] in unregistered_tenants:
+                elif present_barcodes[0] in unregistered_tenants:
                     if present_barcodes[0]==new_face_buffer[0] and name==new_face_buffer[1] :                    
                         qrmatch = "Matching tenant face : %s "%(args["newfacebuffermax"]-new_face_buffer[2])
                         new_face_buffer = (present_barcodes[0],name,new_face_buffer[2]+1,"t")
@@ -686,7 +697,7 @@ while True:
                                 if new_face_buffer[0] in unregistered_guests:
                                     del unregistered_guests[new_face_buffer[0]]
 
-                            elif:
+                            elif new_face_buffer[3]=='t':
                                 uuid2tenantqr[name] = new_face_buffer[0] 
                                 uuid2tenantname[name] = face_name
 

@@ -495,9 +495,10 @@ while True:
 
 
         if name in uuid2tenantname:
-            displayname = uuid2tenantname[name]
+            displayname = '%s (%s)'%(uuid2tenantname[name],'Tenant')
         elif name in uuid2guestname:
-            displayname = uuid2guestname[name]
+            displayname = '%s (%s)'%(uuid2guestname[name],'Guest')
+            #displayname = uuid2guestname[name]
         #elif name in uuid2name:
         #    displayname = uuid2name[name]
         else:

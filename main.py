@@ -14,6 +14,8 @@
 # [GU] Guest register + Auto Load + Guest Matching
 # [LG] Long Term Guest face memory
 
+# [TP] Tenant Passes
+
 
 # USAGE
 # python main.py --cascade haarcascade_frontalface_default.xml --encodings encodings.pickle --prototxt deploy.prototxt.txt --model res10_300x300_ssd_iter_140000.caffemodel --framesize 1000
@@ -74,7 +76,7 @@ ap.add_argument("-k", "--capturecap", type=int, default=10,
 
 # [GU,LG]
 
-ap.add_argument("-g", "--newguestbufferth", type=int, default=10,
+ap.add_argument("-g", "--newfacebuffermax", type=int, default=10,
     help="maximum amount of encodings per user")
 
 
@@ -117,10 +119,9 @@ for subdir, dirs, files in os.walk("u_encodings"):
                     f.close()
 
 
+print("[INFO] loading long term memory")
 # [ME] Load User Metadata
 uuid2name = {}
-uuid2qr = {}
-
 
 for subdir, dirs, files in os.walk("u_meta"):
     for file in files:
@@ -139,11 +140,52 @@ for subdir, dirs, files in os.walk("u_meta"):
                     #print(g_data)
 
                     #Load registered guests in memory
-                    if not m_data["face_id"] == '' and not m_data["user_name"] == '':
-                        uuid2name[m_data["face_id"]] = m_data["user_name"] 
+                    if not m_data["face_id"] == '' and not m_data["face_name"] == '':
+                        uuid2name[m_data["face_id"]] = m_data["face_name"] 
                     
-                    if not m_data["face_id"] == '' and not m_data["qr_id"] == '':
-                        uuid2qr[m_data["face_id"]] = m_data["qr_id"]
+                   
+                except:
+                    print('%s is corrupt. Skipping'%filepath)
+                    pass    
+                finally:
+                    f.close()
+
+#print(uuid2name)
+
+
+
+
+# [TP] Load Tenant Passes
+print("[INFO] loading tenant passes...")
+uuid2tenantqr = {}
+uuid2tenantname = {}
+unregistered_tenants = {}
+
+
+for subdir, dirs, files in os.walk("t_pass"):
+    for file in files:
+        #print os.path.join(subdir, file)
+        filepath = subdir + os.sep + file
+
+        if filepath.endswith(".json"):
+            
+            # Open the file
+            t_data = ''
+            with open(filepath, "r") as f: 
+                try: 
+                    t_data_json = f.read()  
+                    t_data = json.loads(t_data_json) 
+
+                    #print(t_data)
+
+                    #Load registered tenants in memory
+                    if not t_data["face_id"]=='' and not t_data["token"]=='':
+                        uuid2tenantqr[t_data["face_id"]] = t_data["token"] 
+                        uuid2tenantname[t_data["face_id"]] = t_data["tenant_name"]
+
+                    #Load un-registered guests in memory
+                    if t_data["face_id"] == '' and not t_data["token"] == '':
+                        unregistered_tenants[t_data["token"]] = t_data["tenant_name"] 
 
                 except:
                     print('%s is corrupt. Skipping'%filepath)
@@ -151,13 +193,15 @@ for subdir, dirs, files in os.walk("u_meta"):
                 finally:
                     f.close()
 
+print(uuid2tenantqr)
+#print(uuid2tenantname)
+#print(unregistered_tenants)
 
-#print(uuid2name)
-print(uuid2qr)
+
 
 
 # [ME] Load Guest Passes
-
+print("[INFO] loading guest passes...")
 uuid2guestqr = {}
 uuid2guestname = {}
 unregistered_guests = {}
@@ -182,11 +226,11 @@ for subdir, dirs, files in os.walk("g_pass"):
                     #Load today's registered guests in memory
                     if not g_data["face_id"]=='' and not g_data["token"]=='' and g_data["date"]==time.strftime("%Y%m%d"):
                         uuid2guestqr[g_data["face_id"]] = g_data["token"] 
-                        uuid2guestname[g_data["face_id"]] = g_data["guest"]
+                        uuid2guestname[g_data["face_id"]] = g_data["guest_name"]
 
                     #Load today's un-registered guests in memory
                     if g_data["face_id"] == '' and not g_data["token"] == '' and g_data["date"]==time.strftime("%Y%m%d"):
-                        unregistered_guests[g_data["token"]] = g_data["guest"] 
+                        unregistered_guests[g_data["token"]] = g_data["guest_name"] 
 
                 except:
                     print('%s is corrupt. Skipping'%filepath)
@@ -489,8 +533,7 @@ while True:
                 timestr = time.strftime("%Y%m%d-%H%M%S")
 
                 #Save Metadata
-                meta_data = {'_id':'','face_id':name,'qr_id':'','user_name':'','access_start':'',\
-                    'access_end':'','user_pin':'','user_type':'','last_seen':timestr,'user_references':''}
+                meta_data = {'_id':'','face_id':name,'qr_id':'','face_name':'','last_seen':timestr}
 
                 met_filename = 'u_meta/%s/meta.json'%(name)
             
@@ -553,24 +596,24 @@ while True:
 
         #print(name)
 
-        if name in uuid2guestqr:
+        if name in uuid2tenantqr:
+            #print('in tenant list')
+            # tenant list lookup
+            if uuid2tenantqr[name] in present_barcodes:
+                qrmatch = "Access Granted : tenant"
+            else:
+                qrmatch = None
+        elif name in uuid2guestqr:
             #print('in guest list')
             # guest list lookup
             if uuid2guestqr[name] in present_barcodes:
                 qrmatch = "Access Granted : Guest"
             else:
-                qrmatch = None
-        elif name in uuid2qr:
-            #print('in tenant list')
-            # tenant list lookup
-            if uuid2qr[name] in present_barcodes:
-                qrmatch = "Access Granted : Tenant"
-            else:
-                qrmatch = None     
+                qrmatch = None    
         else:
             qrmatch = None
 
-            if len(unregistered_guests)==0:
+            if len(unregistered_guests)==0 and len(unregistered_tenants)==0 :
                 continue
 
             #If the face hasn't been captured in the permanent encodings, skip
@@ -584,17 +627,17 @@ while True:
                 if present_barcodes[0] in unregistered_guests:
                     if present_barcodes[0]==new_guest_buffer[0] and name==new_guest_buffer[1] :                    
                         new_guest_buffer = (present_barcodes[0],name,new_guest_buffer[2]+1)
-                        qrmatch = "Learning guest face : %s "%(args["newguestbufferth"]-new_guest_buffer[2])
+                        qrmatch = "Learning guest face : %s "%(args["newfacebuffermax"]-new_guest_buffer[2])
                     else:
                         new_guest_buffer = (present_barcodes[0],name,0)
-                        qrmatch = "Learning guest face : %s "%(args["newguestbufferth"]-new_guest_buffer[2])
+                        qrmatch = "Learning guest face : %s "%(args["newfacebuffermax"]-new_guest_buffer[2])
 
                     print(new_guest_buffer)
 
             #[GU] Guest candidate is stable,
             # post the match between face and guest pass
 
-            if new_guest_buffer[2] == args["newguestbufferth"]:
+            if new_guest_buffer[2] == args["newfacebuffermax"]:
 
                 # Open the g_pass to update it
                 pass_filename = 'g_pass/%s/pass_%s.json'%(time.strftime("%Y%m%d"),new_guest_buffer[0])
@@ -659,8 +702,8 @@ while True:
                     enc_meta_json = f.read()
                     enc_meta = json.loads(enc_meta_json)
 
-                    # input user_name
-                    enc_meta['user_name'] = guest_name
+                    # input face_name
+                    enc_meta['face_name'] = guest_name
                     enc_meta['last_seen'] = time.strftime("%Y%m%d-%H%M%S")
                     print(enc_meta)
                     

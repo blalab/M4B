@@ -6,7 +6,7 @@ import os
 print("GUEST BOOKING INTERFACE")
 
 
-guest = input("Guest name:")
+guest_name = str(input("Guest name:"))
 print("You entered " + str(guest))
 
 date = str(input("Visit Date: (YYYYMMDD)"))
@@ -18,7 +18,7 @@ print(str(date))
 
 g_pass = {}
 g_pass['_id'] = ''
-g_pass['guest'] = guest
+g_pass['guest_name'] = guest_name
 t = uuid.uuid4().hex
 g_pass['token'] = t[:5]
 g_pass['date'] = date
